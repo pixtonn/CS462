@@ -1,0 +1,6 @@
+1. I use a function for messages because it needs to be able to return the value, and it doesn't cause
+   changes to the state of the api in the background (Twilio). I use an action for the send SMS because
+   it does change the state in the server (adding a message), and it doesn't need to return anything.
+2. Putting the secrets directly in the module is not how it should ever be one, because secrets need to
+   be guarded and they will also be different for different users in many cases. By using the "with" clause
+   and making each user enter the secrets, they act as credentials for those who would use the api.

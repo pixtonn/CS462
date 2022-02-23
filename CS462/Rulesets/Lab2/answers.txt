@@ -1,0 +1,76 @@
+1.  I used a rule conditional statement. This makes the rule fire even if no genericThing is present, 
+    but it doesn't complete its operation if it is null. By using an event expression I wouldn't be 
+    able to even tell if the event was ever called without a genericThing.
+2.  Having separate channels would allow me to handle each sensor on its own - aka I could differentiate
+    them. This means that I could keep track of each sensor's readings compared to its own, and even set
+    their own temp thresholds. I could then send all the data to a single channel that compiles it all into
+    one, which is what having only one channel would do.
+3.  
+{
+  "eid": "ckzx3artj00avw4to266s8hjp",
+  "directives": [
+    {
+      "type": "directive",
+      "name": "say",
+      "options": {
+        "message": "Wovyn running"
+      },
+      "meta": {
+        "rid": "wovyn_base",
+        "rule_name": "process_heartbeat",
+        "txnId": "ckzx3artj00avw4to266s8hnk"
+      }
+    }
+  ]
+}
+
+There was only the one directive returned, process heartbeat. It ran both process_heartbeat and
+new_temperature_reading, so two rules ran.
+
+4.
+{
+  "eid": "ckzx3artj00avw4to266s8hnk",
+  "directives": [
+    {
+      "type": "directive",
+      "name": "say",
+      "options": {
+        "message": "Threshold NOT violated!",
+        "max temp": "",
+        "threshold": 99
+      },
+      "meta": {
+        "rid": "wovyn_base",
+        "rule_name": "find_high_temps",
+        "txnId": "ckzx3artj00avw4to266s8hnk"
+      }
+    }
+  ]
+}
+
+Again, there was only one directive, from process heartbeat. However, process_heartbeat, new_temperature_reading,
+threshold_violation, and send_sms rules were run, so four rules ran. I suppose we might not count send_sms, so possibly
+three rules ran.
+
+5.  https://swimlanes.io/#dY+xbsNADEP3+wqNjeEge4b+RMeiOKg1bR+gOxmSYtd/XxtZ05XkI8EoIbjTpuveaBTdUkqL6Q/c8wy2+AYHXd+pYcuBusA4HoZs4KG06U6n2FOUCg+uS0r/JM+SmA0+qwx5LSocRduLghepE3a0IXv1g9CeRtPa08E4TzhGNY4bHwB13ef4ECHfW/Av6QpbC7avt9vEIrD9dtrXp33pOhrVqKqBBgQX8T8=
+
+6.  I would say find_high_temps is an event intermediary. It connects the temperature checking to the sms sender.
+    These are separate entities, and find_high_temps connects them, being an intermediary.
+7.  
+When the temperature is below the threshold, I get: 
+21:32:23.179Z [DEBUG] rule selected wovyn_base : find_high_temps
+21:32:23.179Z [DEBUG] fired 
+21:32:23.179Z [DEBUG] txnDone {}
+
+When it is above, I get 
+21:32:28.028Z [DEBUG] rule selected wovyn_base : find_high_temps
+21:32:28.028Z [DEBUG] fired 
+21:32:28.028Z [DEBUG] event added to schedule {"eci":"ckzoqbmqe0008hkto8tq0gbqz","domain":"wovyn","name":"threshold_violation","data":{"attrs":{"temperature":100,"timestamp":"1.1.1.2"}},"time":1645471948028}
+21:32:28.031Z [DEBUG] rule selected wovyn_base : threshold_notification
+21:32:28.031Z [KLOG] FORM:  {"From":"+17754061835","Body":"Temperature threshold violated. Temperature: 100 at 1.1.1.2","To":"+14703939210"}
+21:32:28.445Z [KLOG] RESPONSE:  {"content":"{\"sid\": \"SM8b9dea2a6fe547f6848a58f7f43f5f67\", \"date_created\": \"Mon, 21 Feb 2022 19:32:28 +0000\", \"date_updated\": \"Mon, 21 Feb 2022 19:32:28 +0000\", \"date_sent\": null, \"account_sid\": \"ACf4b3d82f7a07506aef484f5e1b2c809f\", \"to\": \"+14703939210\", \"from\": \"+17754061835\", \"messaging_service_sid\": null, \"body\": \"Sent from your Twilio trial account - Temperature threshold violated. Temperature: 100 at 1.1.1.2\", \"status\": \"queued\", \"num_segments\": \"1\", \"num_media\": \"0\", \"direction\": \"outbound-api\", \"api_version\": \"2010-04-01\", \"price\": null, \"price_unit\": \"USD\", \"error_code\": null, \"error_message\": null, \"uri\": \"/2010-04-01/Accounts/ACf4b3d82f7a07506aef484f5e1b2c809f/Messages/SM8b9dea2a6fe547f6848a58f7f43f5f67.json\", \"subresource_uris\": {\"media\": \"/2010-04-01/Accounts/ACf4b3d82f7a07506aef484f5e1b2c809f/Messages/SM8b9dea2a6fe547f6848a58f7f43f5f67/Media.json\"}}","content_type":"application/json","content_length":861,"headers":{"access-control-allow-credentials":"true","access-control-allow-headers":"Accept, Authorization, Content-Type, If-Match, If-Modified-Since, If-None-Match, If-Unmodified-Since","access-control-allow-methods":"GET, POST, DELETE, OPTIONS","access-control-allow-origin":"*","access-control-expose-headers":"ETag","connection":"close","content-length":"861","content-type":"application/json","date":"Mon, 21 Feb 2022 19:32:28 GMT","strict-transport-security":"max-age=31536000","twilio-concurrent-requests":"1","twilio-request-duration":"0.114","twilio-request-id":"RQea190f0d52e09a2ed031ee1bcb55cd86","x-api-domain":"api.twilio.com","x-home-region":"us1","x-powered-by":"AT-5000","x-shenanigans":"none"},"status_code":201,"status_line":"Created"}
+21:32:28.445Z [DEBUG] fired 
+21:32:28.447Z [DEBUG] txnDone {}
+
+When the temperature is above the threshold, I don't get "txvDone" yet. Instead, the threshold_violation 
+event is added to the schedule, and after it sends then it is done.
