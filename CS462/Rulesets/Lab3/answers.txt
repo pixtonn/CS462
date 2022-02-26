@@ -1,0 +1,7 @@
+1. the collect_temperatures rule happens whenever a new temperature comes along, and it adds it to the entity variable temperatures. The temperatures function then lets other rules access that entity variable
+
+2. I simply used the filter operator over the temperatures array, only letting values under the threshold through
+
+3. temperatures is only used within this ruleset, so it should do nothing if removed
+
+4. outside events could not get the list of temperatures if it is not listed on shares
